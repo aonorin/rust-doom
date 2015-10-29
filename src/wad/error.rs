@@ -1,10 +1,12 @@
+use byteorder::Error as ByteOrderError;
+use image::ImageError;
+use name::WadName;
 use std::error::Error as StdError;
+use std::fmt::{Display, Formatter};
+use std::fmt::Result as FmtResult;
 use std::io::Error as IoError;
 use std::path::{PathBuf, Path};
 use std::result::Result as StdResult;
-use std::fmt::{Display, Formatter};
-use std::fmt::Result as FmtResult;
-use name::WadName;
 use toml::DecodeError as TomlDecodeError;
 use toml::ParserError as TomlParserError;
 
@@ -32,22 +34,28 @@ impl Display for Error {
 #[derive(Debug)]
 pub enum ErrorKind {
     Io(IoError),
+    ByteOrder(ByteOrderError),
     BadWadHeader,
-    MissingRequiredLump(WadName),
-    MissingRequiredPatch(WadName, WadName),
+    BadWadName(Vec<u8>),
+    MissingRequiredLump(String),
+    //MissingRequiredPatch(WadName, WadName),
     BadMetadataSchema(TomlDecodeError),
     BadMetadataSyntax(Vec<TomlParserError>),
+    BadImage(WadName, ImageError),
 }
 
 impl ErrorKind {
     fn description(&self) -> &str {
         match *self {
             ErrorKind::Io(ref inner) => inner.description(),
+            ErrorKind::ByteOrder(ref inner) => inner.description(),
             ErrorKind::BadWadHeader(..) => "invalid header",
+            ErrorKind::BadWadName(..) => "invalid wad name",
             ErrorKind::MissingRequiredLump(..) => "missing required lump",
-            ErrorKind::MissingRequiredPatch(..) => "missing required patch",
+            //ErrorKind::MissingRequiredPatch(..) => "missing required patch",
             ErrorKind::BadMetadataSchema(..) => "invalid data in metadata",
             ErrorKind::BadMetadataSyntax(..) => "TOML syntax error in metadata",
+            ErrorKind::BadImage(..) => "Bad image",
         }
     }
 }
@@ -57,18 +65,23 @@ impl Display for ErrorKind {
         let desc = self.description();
         match *self {
             ErrorKind::Io(ref inner) => write!(fmt, "{}", inner),
+            ErrorKind::ByteOrder(ref inner) => write!(fmt, "{}", inner),
             ErrorKind::BadWadHeader => write!(fmt, "{}", desc),
+            ErrorKind::BadWadName(ref name) => write!(fmt, "{} ({:?})", desc, name),
             ErrorKind::MissingRequiredLump(ref name) => {
                 write!(fmt, "{} ({})", desc, name)
             },
-            ErrorKind::MissingRequiredPatch(ref patch, ref texture) => {
-                write!(fmt, "{} ({}, required by {})", desc, patch, texture)
-            },
+            //ErrorKind::MissingRequiredPatch(ref patch, ref texture) => {
+            //    write!(fmt, "{} ({}, required by {})", desc, patch, texture)
+            //},
             ErrorKind::BadMetadataSchema(ref err) => {
                 write!(fmt, "{}: {}", desc, err)
             },
             ErrorKind::BadMetadataSyntax(ref errors) => {
                 write!(fmt, "{}: {:?}", desc, errors)
+            },
+            ErrorKind::BadImage(ref name, ref inner) => {
+                write!(fmt, "{}: in {}: {}", desc, name, inner)
             },
         }
     }
@@ -77,6 +90,12 @@ impl Display for ErrorKind {
 impl From<IoError> for Error {
     fn from(cause: IoError) -> Error {
         ErrorKind::Io(cause).into()
+    }
+}
+
+impl From<ByteOrderError> for Error {
+    fn from(cause: ByteOrderError) -> Error {
+        ErrorKind::ByteOrder(cause).into()
     }
 }
 

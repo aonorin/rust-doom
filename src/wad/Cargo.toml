@@ -13,9 +13,6 @@ path = "../common"
 [dependencies.gfx]
 path = "../gfx"
 
-[dependencies.gl]
-path = "../gl"
-
 [dependencies.math]
 path = "../math"
 
@@ -27,3 +24,4 @@ log = "*"
 regex = "*"
 num = "*"
 sdl2 = "*"
+byteorder = "*"

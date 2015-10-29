@@ -1,5 +1,6 @@
-use math::{Mat4, Vec3, Vec3f};
-use cached::Cached;
+use std::cell::Cell;
+use math::{Mat4, Vec3f};
+use num::Zero;
 
 /// A Camera object abstracts a projection-modelview transform, by providing concepts like
 /// position and orientation.
@@ -9,7 +10,8 @@ pub struct Camera {
     yaw: f32,                 // Left-right look (rotation around y-axis).
     pitch: f32,               // Up-down look (rotation around x-axis).
     roll: f32,                // Tilt left-right (rotation around z-axis).
-    modelview: Cached<Mat4>,  // Cached modelview transform.
+    modelview: Cell<Mat4>,    // Cached modelview transform.
+    dirty: Cell<bool>,        // Whether the cached modelview is out of date.
 
     // Projection parameters.
     fov: f32,           // Horizontal field of view.
@@ -25,23 +27,27 @@ impl Camera {
     /// specified perspective parameters.
     pub fn new(fov: f32, aspect_ratio: f32, near: f32, far: f32) -> Camera {
         let camera = Camera {
-            position: Vec3::zero(), yaw: 0.0, pitch: 0.0, roll: 0.0,
+            position: Vec3f::zero(), yaw: 0.0, pitch: 0.0, roll: 0.0,
 
             fov: fov, aspect_ratio: aspect_ratio,
             near: near, far: far,  // Whereeeever you are.
             projection: Mat4::new_perspective(fov, aspect_ratio, near, far),
 
-            modelview: Cached::invalidated(Mat4::new_identity()),
+            modelview: Cell::new(Mat4::new_identity()),
+            dirty: Cell::new(true),
         };
         camera
     }
 
     /// Returns the modelview matrix associated with this camera.
-    pub fn modelview(&self) -> &Mat4 {
-        self.modelview.get(|| {
-            Mat4::new_euler_rotation(self.yaw, self.pitch, self.roll)
-                * Mat4::new_translation(-self.position)
-        })
+    pub fn modelview(&self) -> Mat4 {
+        if self.dirty.get() {
+            self.dirty.set(false);
+            self.modelview.set(
+                Mat4::new_euler_rotation(self.yaw, self.pitch, self.roll)
+                    * Mat4::new_translation(-self.position));
+        }
+        self.modelview.get()
     }
 
     /// Returns the projection matrix associated with this camera.
@@ -62,35 +68,35 @@ impl Camera {
     /// Changes the yaw of the camera (rotation around Y, bottom to top, axis).
     pub fn set_yaw(&mut self, value: f32) -> &mut Camera {
         self.yaw = value;
-        self.modelview.invalidate();
+        self.dirty.set(true);
         self
     }
 
     /// Changes the pitch of the camera (rotation around X, left to right, axis).
     pub fn set_pitch(&mut self, value: f32) -> &mut Camera {
         self.pitch = value;
-        self.modelview.invalidate();
+        self.dirty.set(true);
         self
     }
 
     /// Changes the roll of the camera (rotation around Z, back to front, axis).
     pub fn set_roll(&mut self, value: f32) -> &mut Camera {
         self.roll = value;
-        self.modelview.invalidate();
+        self.dirty.set(true);
         self
     }
 
     /// Moves the camera with to an absolute position.
     pub fn set_position(&mut self, value: Vec3f) -> &mut Camera {
         self.position = value;
-        self.modelview.invalidate();
+        self.dirty.set(true);
         self
     }
 
     /// Moves the camera with a relative vector.
     pub fn move_by(&mut self, by: Vec3f) -> &mut Camera {
         self.position = self.position + by;
-        self.modelview.invalidate();
+        self.dirty.set(true);
         self
     }
 
@@ -114,7 +120,7 @@ impl Camera {
 #[cfg(test)]
 mod test {
     use super::Camera;
-    use math::{Mat4, Vec3};
+    use math::{Mat4, Vec3f};
 
     #[test]
     fn projection() {
@@ -140,24 +146,24 @@ mod test {
         camera.set_yaw(0.0);
         camera.set_pitch(0.0);
         camera.set_roll(0.0);
-        camera.set_position(Vec3::new(0.0, 0.0, 0.0));
+        camera.set_position(Vec3f::new(0.0, 0.0, 0.0));
         assert_eq!(camera.yaw(), 0.0);
         assert_eq!(camera.pitch(), 0.0);
         assert_eq!(camera.roll(), 0.0);
-        assert_eq!(camera.position(), &Vec3::new(0.0, 0.0, 0.0));
+        assert_eq!(camera.position(), &Vec3f::new(0.0, 0.0, 0.0));
 
         camera.set_yaw(1.0);
         camera.set_pitch(2.0);
         camera.set_roll(3.0);
-        camera.set_position(Vec3::new(4.0, 5.0, 6.0));
+        camera.set_position(Vec3f::new(4.0, 5.0, 6.0));
         assert_eq!(camera.yaw(), 1.0);
         assert_eq!(camera.pitch(), 2.0);
         assert_eq!(camera.roll(), 3.0);
-        assert_eq!(camera.position(), &Vec3::new(4.0, 5.0, 6.0));
+        assert_eq!(camera.position(), &Vec3f::new(4.0, 5.0, 6.0));
 
         assert!(camera.modelview().approx_eq(
                 &(Mat4::new_euler_rotation(1.0, 2.0, 3.0)
-                  * Mat4::new_translation(Vec3::new(-4.0, -5.0, -6.0))),
+                  * Mat4::new_translation(Vec3f::new(-4.0, -5.0, -6.0))),
                 1e-16));
     }
 }

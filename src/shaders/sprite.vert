@@ -2,7 +2,7 @@ uniform mat4 u_modelview;
 uniform mat4 u_projection;
 uniform vec2 u_atlas_size;
 uniform float u_time;
-uniform float u_lights[256];
+uniform samplerBuffer u_lights;
 
 layout(location = 0) in vec3 a_pos;
 layout(location = 1) in vec2 a_atlas_uv;
@@ -10,8 +10,7 @@ layout(location = 2) in vec2 a_tile_uv;
 layout(location = 3) in vec2 a_tile_size;
 layout(location = 4) in float a_local_x;
 layout(location = 5) in int a_num_frames;
-layout(location = 6) in int a_frame_offset;
-layout(location = 7) in int a_light;
+layout(location = 6) in int a_light;
 
 out float v_dist;
 out vec2 v_tile_uv;
@@ -26,7 +25,7 @@ void main() {
     if (a_num_frames == 1) {
       v_atlas_uv = a_atlas_uv;
     } else {
-        float frame_index = u_time / ANIM_FPS + float(a_frame_offset);
+        float frame_index = u_time / ANIM_FPS;
         frame_index = floor(mod(frame_index, float(a_num_frames)));
 
         float atlas_u = a_atlas_uv.x + frame_index * a_tile_size.x;
@@ -41,7 +40,7 @@ void main() {
     vec3 right = vec3(u_modelview[0][0], u_modelview[1][0], u_modelview[2][0]);
     vec3 pos = a_pos + right * a_local_x;
     vec4 projected_pos = u_projection * (u_modelview * vec4(pos, 1.0));
-    v_light = u_lights[a_light];
+    v_light = texelFetch(u_lights, a_light).r;
     v_dist = projected_pos.w;
     gl_Position = projected_pos;
 

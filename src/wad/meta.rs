@@ -1,5 +1,5 @@
-use error::{Result, InFile};
 use error::ErrorKind::BadMetadataSyntax;
+use error::{Result, InFile};
 use name::WadName;
 use regex::Regex;
 use rustc_serialize::{Encodable, Decodable};
@@ -69,14 +69,25 @@ impl WadMetadata {
             })
     }
 
-    pub fn sky_for(&self, name: &WadName) -> &SkyMetadata {
-        for sky in self.sky.iter() {
-            let regex = Regex::new(&sky.level_pattern).unwrap();
-            if regex.is_match(name.as_str()) {
-                return sky;
-            }
-        }
-        &self.sky[0]
+    pub fn sky_for(&self, name: &WadName) -> Option<&SkyMetadata> {
+        self.sky.iter()
+                .find(|sky| {
+                    Regex::new(&sky.level_pattern).map(|r| r.is_match(name.as_ref()))
+                                                  .unwrap_or_else(|_| {
+                                                      warn!("Invalid level pattern {} for sky {}.",
+                                                            sky.level_pattern, sky.texture_name);
+                                                      false
+                                                  })
+                })
+                .or_else(|| {
+                    if let Some(sky) = self.sky.get(0) {
+                        warn!("No sky found for level {}, using {}.", name, sky.texture_name);
+                        Some(sky)
+                    } else {
+                        error!("No sky metadata provided.");
+                        None
+                    }
+                })
     }
 }
 
@@ -122,7 +133,7 @@ mod test {
                     sequence = "W"
                     obstacle = false
                     hanging = false
-        "#).unwrap();
+        "#).ok().expect("test: could not parse test metadata");
     }
 }
 
