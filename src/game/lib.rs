@@ -1,4 +1,5 @@
-#[macro_use] extern crate log;
+#[macro_use]
+extern crate log;
 
 extern crate common;
 extern crate gfx;
@@ -18,6 +19,7 @@ pub mod player;
 pub mod level;
 pub mod lights;
 pub mod game;
+pub mod world;
 
 
 pub const SHADER_ROOT: &'static str = "src/shaders";

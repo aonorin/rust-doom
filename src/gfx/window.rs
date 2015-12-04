@@ -1,13 +1,13 @@
 use error::Result;
-use glium_sdl2::{SDL2Facade, DisplayBuild};
-use glium::Frame;
+use glium_sdl2::{DisplayBuild, SDL2Facade};
+use glium::{Frame, Surface};
 use platform;
 use sdl2;
 use sdl2::Sdl;
 use sdl2::video::GLProfile;
 
 
-const WINDOW_TITLE: &'static str = "Rusty Doom v0.0.7 - Toggle mouse with backtick key (`))";
+const WINDOW_TITLE: &'static str = "Rusty Doom v0.0.7";
 const OPENGL_DEPTH_SIZE: u8 = 24;
 
 
@@ -28,16 +28,24 @@ impl Window {
         gl_attr.set_double_buffer(true);
 
         let facade = try!(video.window(WINDOW_TITLE, width as u32, height as u32)
-            .position_centered()
-            .opengl()
-            .build_glium());
+                               .position_centered()
+                               .opengl()
+                               .build_glium());
 
         sdl2::clear_error();
         Ok(Window {
-           facade: facade,
-           width: width,
-           height: height,
+            facade: facade,
+            width: width,
+            height: height,
         })
+    }
+
+    pub fn width(&self) -> u32 {
+        self.width
+    }
+
+    pub fn height(&self) -> u32 {
+        self.height
     }
 
     pub fn aspect_ratio(&self) -> f32 {
@@ -45,11 +53,12 @@ impl Window {
     }
 
     pub fn draw(&self) -> Frame {
-        self.facade.draw()
+        let mut frame = self.facade.draw();
+        frame.clear_all_srgb((0.06, 0.07, 0.09, 0.0), 1.0, 0);
+        frame
     }
 
     pub fn facade(&self) -> &SDL2Facade {
         &self.facade
     }
 }
-

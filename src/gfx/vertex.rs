@@ -1,6 +1,6 @@
 use Bounds;
-use error::{Result, NeededBy};
-use glium::{VertexBuffer};
+use error::{NeededBy, Result};
+use glium::VertexBuffer;
 use math::{Vec2f, Vec3f};
 use Window;
 
@@ -9,7 +9,7 @@ pub type SpriteBuffer = VertexBuffer<SpriteVertex>;
 pub type StaticBuffer = VertexBuffer<StaticVertex>;
 
 
-#[repr(packed)]
+#[repr(C)]
 #[derive(Copy, Clone)]
 pub struct StaticVertex {
     pub a_pos: [f32; 3],
@@ -33,8 +33,7 @@ impl FlatBufferBuilder {
         FlatBufferBuilder(Vec::with_capacity(256))
     }
 
-    pub fn push(&mut self, xz: &Vec2f, y: f32, light_info: u8, bounds: &Bounds)
-            -> &mut Self {
+    pub fn push(&mut self, xz: &Vec2f, y: f32, light_info: u8, bounds: &Bounds) -> &mut Self {
         self.0.push(StaticVertex {
             a_pos: [xz[0], y, xz[1]],
             a_atlas_uv: [bounds.pos[0], bounds.pos[1]],
@@ -60,8 +59,15 @@ impl WallBufferBuilder {
         WallBufferBuilder(Vec::with_capacity(256))
     }
 
-    pub fn push(&mut self, xz: &Vec2f, y: f32, tile_u: f32, tile_v: f32,
-                light_info: u8, scroll_rate: f32, bounds: &Bounds) -> &mut Self {
+    pub fn push(&mut self,
+                xz: &Vec2f,
+                y: f32,
+                tile_u: f32,
+                tile_v: f32,
+                light_info: u8,
+                scroll_rate: f32,
+                bounds: &Bounds)
+                -> &mut Self {
         self.0.push(StaticVertex {
             a_pos: [xz[0], y, xz[1]],
             a_atlas_uv: [bounds.pos[0], bounds.pos[1]],
@@ -80,7 +86,7 @@ impl WallBufferBuilder {
     }
 }
 
-#[repr(packed)]
+#[repr(C)]
 #[derive(Copy, Clone)]
 pub struct SpriteVertex {
     pub a_pos: [f32; 3],
@@ -102,8 +108,14 @@ impl DecorBufferBuilder {
         DecorBufferBuilder(Vec::with_capacity(256))
     }
 
-    pub fn push(&mut self, pos: &Vec3f, local_x: f32, tile_u: f32, tile_v: f32, bounds: &Bounds,
-                light_info: u8) -> &mut Self {
+    pub fn push(&mut self,
+                pos: &Vec3f,
+                local_x: f32,
+                tile_u: f32,
+                tile_v: f32,
+                bounds: &Bounds,
+                light_info: u8)
+                -> &mut Self {
         self.0.push(SpriteVertex {
             a_pos: [pos[0], pos[1], pos[2]],
             a_local_x: local_x,
@@ -121,7 +133,7 @@ impl DecorBufferBuilder {
     }
 }
 
-#[repr(packed)]
+#[repr(C)]
 #[derive(Copy, Clone)]
 pub struct SkyVertex {
     pub a_pos: [f32; 3],
@@ -137,9 +149,7 @@ impl SkyBufferBuilder {
     }
 
     pub fn push(&mut self, xz: &Vec2f, y: f32) -> &mut Self {
-        self.0.push(SkyVertex {
-            a_pos: [xz[0], y, xz[1]],
-        });
+        self.0.push(SkyVertex { a_pos: [xz[0], y, xz[1]] });
         self
     }
 

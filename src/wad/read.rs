@@ -1,4 +1,4 @@
-use byteorder::{LittleEndian, ByteOrder, ReadBytesExt};
+use byteorder::{ByteOrder, LittleEndian, ReadBytesExt};
 use error::Result;
 use std::io::Read;
 use std::io::Error as IoError;
@@ -97,10 +97,12 @@ impl WadReadFrom for [u8; 768] {
 }
 
 pub trait WadRead: Read + Sized {
+    #[inline]
     fn wad_read<T: WadReadFrom>(&mut self) -> Result<T> {
         T::wad_read_from(self)
     }
 
+    #[inline]
     fn wad_read_many<T: WadReadFrom>(&mut self, n: usize) -> Result<Vec<T>> {
         T::wad_read_many_from(self, n)
     }
@@ -109,7 +111,10 @@ pub trait WadRead: Read + Sized {
         while !buf.is_empty() {
             match self.read(buf) {
                 Ok(0) => break,
-                Ok(n) => { let tmp = buf; buf = &mut tmp[n..]; }
+                Ok(n) => {
+                    let tmp = buf;
+                    buf = &mut tmp[n..];
+                }
                 Err(ref e) if e.kind() == IoErrorKind::Interrupted => {}
                 Err(e) => return Err(e),
             }

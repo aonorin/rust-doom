@@ -1,5 +1,7 @@
-#[macro_use] extern crate log;
-#[macro_use] extern crate regex;
+#[macro_use]
+extern crate log;
+#[macro_use]
+extern crate regex;
 
 extern crate byteorder;
 extern crate common;
@@ -10,6 +12,7 @@ extern crate rustc_serialize;
 extern crate sdl2;
 extern crate time;
 extern crate toml;
+extern crate vec_map;
 
 pub use archive::Archive;
 pub use image::Image;
@@ -19,13 +22,17 @@ pub use meta::SkyMetadata;
 pub use meta::ThingMetadata;
 pub use name::WadName;
 pub use tex::TextureDirectory;
-pub use error::{Result, Error};
+pub use error::{Error, Result};
+pub use visitor::{LevelVisitor, LevelWalker, Branch, Marker};
+pub use light::{LightEffect, LightEffectKind, LightInfo};
 
 mod name;
 mod archive;
 mod level;
 mod image;
 mod error;
+mod visitor;
+mod light;
 pub mod types;
 pub mod util;
 pub mod tex;
